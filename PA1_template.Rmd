@@ -8,18 +8,150 @@ output:
 
 ## Loading and preprocessing the data
 
-
-
+1. Read the data into a table, and explore the first rows 
+```{r}
+activity<-read.csv("activity.csv")
+head(activity)
+```
+2. Coerce the data to a data frame
+```{r}
+activitydf<-as.data.frame(activity)
+```
 ## What is mean total number of steps taken per day?
+1. Total number of steps each day in the variable StepsDay, to be displayed. Then explore a summary of the data. 
+```{r}
+StepsDay<-rowsum(activitydf$steps,activitydf$date)
+StepsDay
+summary(StepsDay)
+```
+2. Plot an histogram of the data
+```{r}
 
+hist(StepsDay)
+```
+
+
+
+3. Mean and median of the number of steps per day
+```{r}
+meanv<-round(mean(StepsDay, na.rm=TRUE),digits=0)
+med<-median(StepsDay, na.rm=TRUE)
+```
+ The mean number of steps per day rounded to the unit step is `r format(meanv,scientifi=FALSE)`, and the median number of steps per day is `r format(med,scientifi=FALSE)`
 
 
 ## What is the average daily activity pattern?
+1. Plot of the average number of steps across all days per daily 5-min interval
+
+```{r}
+pattern<-aggregate(activitydf$steps~activitydf$interval, FUN=mean)
+
+plot(pattern, type="l", xlab="5-min interval", ylab="daily average number of steps")
+```
 
 
+2. The interval that contains the maximum average number of steps:
+```{r}
+imax<-which(pattern$`activitydf$steps` == max(pattern$`activitydf$steps`), arr.ind = TRUE)
+maxintv<-pattern$`activitydf$interval`[imax]
+```
+It is `r maxintv`
 
 ## Imputing missing values
+1. Missing values in the dataset:
+```{r}
+s<-sum(is.na(activitydf))
 
+```
+The total number of missing values in the dataset is `r s`.
+
+
+2. A strategy for filling in all missing values in the dataset could be assigning the mean value of the variable where data is missing.
+
+3. Creating a new dataset that is equal to the original dataset but with the missing data filled in
+
+Install the imputeTS package if not previouly installed
+#```{r}
+#install.packages("imputeTS")
+#```
+
+
+```{r}
+library(imputeTS)
+activitydf2<-activitydf
+activitydf2<-na.mean(activitydf)
+```
+
+3. Histogram of the total number of steps taken each day 
+
+```{r}
+StepsDay2<-rowsum(activitydf2$steps,activitydf2$date)
+summary(StepsDay2)
+hist(StepsDay)
+```
+
+Mean and median total number of steps taken per day. 
+```{r}
+meanv2<-round(mean(StepsDay2, na.rm=TRUE),digits=0)
+med2<-median(StepsDay2, na.rm=TRUE)
+```
+ The mean number of steps per day rounded to the unit step is `r format(meanv2,scientifi=FALSE)`, and the median number of steps per day is `r format(med2,scientifi=FALSE)`
+ 
+These values do not differ from the estimates from the first part of the assignment. Imputing the variable mean where the variable is not registered is not altering the mean. It may alter other summary statistics. Median is affected by a fraction of a unit.
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+1. To create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day, first add the day-of-week column in english language:
+```{r}
+Sys.setlocale("LC_TIME", "English")
+activitydf2$day <- weekdays(as.Date(activitydf2$date), abbreviate=FALSE)
+```
+
+and then convert day-of-week column vales to Weekday or Weekend
+```{r}
+for (i in 1:length(activitydf2$day)){
+if (activitydf2$day[i] == "Saturday" || activitydf2$day[i] == "Sunday"){
+        activitydf2$day[i] <- "Weekend"
+} else {
+        activitydf2$day[i] <- "Weekday"
+}
+}
+activitydf2$day<-as.factor(activitydf2$day)
+```
+
+
+
+2. Panel plot comparing weekends and wwekdays:
+
+First, separate data for each 
+
+```{r}
+X <- split(activitydf2, activitydf2$day)
+d1<-as.data.frame(X[1])
+d2<-as.data.frame(X[2])
+
+names(d1)[1]<-paste("steps")
+names(d1)[3]<-paste("interval")
+
+names(d2)[1]<-paste("steps")
+names(d2)[3]<-paste("interval")
+```
+
+
+Second, compute the relevant averages 
+
+```{r}
+pat1<-aggregate(d1$steps~d1$interval, FUN=mean)
+pat2<-aggregate(d2$steps~d2$interval, FUN=mean)
+```
+
+
+Panel plot of both segments
+
+```{r}
+par(mfrow=c(2,1))
+plot(pat2, type="l", xlab="5-min interval", ylab="avg steps", main = "weekend")
+plot(pat1, type="l", xlab="5-min interval", ylab="avg steps", main = "weekday")
+
+```
